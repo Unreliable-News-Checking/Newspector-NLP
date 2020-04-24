@@ -1,0 +1,8 @@
+﻿.idea
+cluster_representations
+linkages
+dendrograms
+distances
+*.csv
+GoogleNews-vectors-negative300.bin.gz
+googlenewsvectorsnegative300.zip
