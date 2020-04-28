@@ -11,7 +11,8 @@ class FireStoreServices(object):
         self.db = firestore.client()
 
 fss = FireStoreServices("service-account-file.json")
-users_ref = fss.db.collection(u'train_tweets')
+users_ref = fss.db.collection(u'train_tweets').order_by(
+    u'date', direction=firestore.Query.DESCENDING).limit(2000)
 tweetSnapshots = users_ref.stream()
 
 tweets = []

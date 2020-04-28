@@ -11,18 +11,19 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 from scipy.spatial.distance import pdist
 
-
 def compute_linkages(X, method, metric):
     links = linkage(X, method=method, metric=metric)
     df = pd.DataFrame(links)
-    df.to_csv("linkages/tfdif_" + method + "_" + metric + ".csv", index=False, header=False)
+    df.to_csv("linkages/tfidf_" + method + "_" + metric + ".csv", index=False, header=False)
 
 stop_words = set(stopwords.words('english'))
 
-texts = pd.read_csv("texts.csv", header=None).to_numpy(dtype="str").T[0]
-# print(texts)
+data = pd.read_csv("data_to_use.csv")
+texts = pd.read_csv("texts.csv", header=None).to_numpy(dtype="str").T[1]
 vectorizer = TfidfVectorizer(stop_words=stop_words, lowercase=True)
 vectors = vectorizer.fit_transform(texts)
+df_vecs = pd.DataFrame(vectors.toarray(), index=data.loc[:]["tweet_id"].to_list())
+df_vecs.to_csv("vectors/tfidf.csv", header=False)
 print(vectors.shape)
 vecs = np.array(vectors.toarray())
 for i, row in enumerate(vecs):

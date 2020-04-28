@@ -13,22 +13,29 @@ def clustering(code, threshold):
     max = np.max(clusters)
     print(max)
     representation = ""
-    relation = {}
+    # relation = {}
+    relation = []
     for i in range(min, max+1):
         representation += "-----------------CLUSTER" + str(i) + "-----------------\n"
         cls = texts[np.where(clusters==i)]
+        # print(cls.shape)
         for text in cls:
             representation += "-------ARTICLE-------\n" + text[0] + "\n"
         representation += "\n"
-        relation[uuid.uuid1()] = data.loc[np.where(clusters==i)+5615]["tweet_id"]
+        cluster_id = uuid.uuid1()
+        # print(np.where(clusters==i))
+        for k in np.where(clusters==i)[0]:
+            print(k)
+        # relation[uuid.uuid1()] = data.loc[np.where(clusters==i)]["tweet_id"]
+            relation.append([cluster_id, data.loc[k]["tweet_id"]])
 
     text_file = open("cluster_representations/" + code + "_" + str(threshold) + ".txt", "w+", encoding="utf-8")
     n = text_file.write(representation)
     text_file.close()
     df = pd.DataFrame(relation)
-    df.to_csv("clusters/" + code + "_" + str(threshold) + ".txt")
+    df.to_csv("clusters/" + code + "_" + str(threshold) + ".csv", header = False, index=False)
 
 
-clustering("tfdif_weighted_cosine", 0.8)
+clustering("tfidf_weighted_cosine", 0.8)
 # clustering("tfdif_single_cosine", 0.8)
 # clustering("tfdif_weighted_dice", 0.8)

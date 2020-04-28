@@ -36,25 +36,33 @@ stop_words = set(stopwords.words('english'))
 
 data = pd.read_csv("tweets2.csv")
 texts = []
-data = data[-n_data:]
+# data = data[-n_data:]
 original_texts = []
 # print(data.iloc[-1])
 for index, row in data.iterrows():
     text = row["text"]
-    # print(row["time"])
+    # print(row["date"])
     if text == text:
         stripped = strip_punctuation(text)
         tokens = filter_stop_words_and_stem(stripped)
         if repr(stripped.strip()) == repr(''):
+            print(row["tweet_id"])
+            print(row["username"])
+            print()
             data = data.drop(index, axis=0)
             continue
         texts.append(tokens)
         original_texts.append(text)
     else:
+        print(row["tweet_id"])
+        print(row["username"])
+        print()
         data = data.drop(index, axis=0)
 
-df = pd.DataFrame(texts)
-df.to_csv("texts.csv", header=False, index=False)
+data = data.reset_index(drop=True)
+print(data.shape)
+df = pd.DataFrame(texts, index=data.loc[:]["tweet_id"].to_list())
+df.to_csv("texts.csv", header=False)
 
 df = pd.DataFrame(original_texts)
 df.to_csv("original_texts.csv", header=False, index=False)
