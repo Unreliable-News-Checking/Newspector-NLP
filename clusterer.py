@@ -36,6 +36,6 @@ def clustering(code, threshold):
     df.to_csv("clusters/" + code + "_" + str(threshold) + ".csv", header = False, index=False)
 
 
-clustering("tfidf_weighted_cosine", 0.8)
+clustering("tfidf_weighted_cosine", 0.85)
 # clustering("tfdif_single_cosine", 0.8)
 # clustering("tfdif_weighted_dice", 0.8)

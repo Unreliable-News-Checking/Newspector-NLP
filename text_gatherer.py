@@ -34,7 +34,7 @@ def strip_punctuation(sentence):
 
 stop_words = set(stopwords.words('english'))
 
-data = pd.read_csv("tweets2.csv")
+data = pd.read_csv("tweets.csv")
 texts = []
 # data = data[-n_data:]
 original_texts = []

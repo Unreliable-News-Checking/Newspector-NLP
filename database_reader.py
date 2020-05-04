@@ -10,7 +10,7 @@ class FireStoreServices(object):
         self.app = firebase_admin.initialize_app(self.cred)
         self.db = firestore.client()
 
-fss = FireStoreServices("service-account-file.json")
+fss = FireStoreServices("newspector-backend-firebase-adminsdk-ws3xc-bd1c31a298.json")
 users_ref = fss.db.collection(u'train_tweets').order_by(
     u'date', direction=firestore.Query.DESCENDING).limit(2000)
 tweetSnapshots = users_ref.stream()
@@ -19,5 +19,7 @@ tweets = []
 for tweetSnapshot in tweetSnapshots:
     tweets.append(tweetSnapshot.to_dict())
 
+print(len(tweets))
 df = pd. DataFrame(tweets)
-df.to_csv("tweets2.csv")
+print(df.loc[0]["date"])
+df.to_csv("tweets3.csv")
