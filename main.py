@@ -9,10 +9,15 @@ from services import firestore_services
 import incrementor
 import time
 
+check_freq = 60 #sec
+delay = 1 #sec
+news_group_lifetime = 48 #days
+news_group_lifetime = news_group_lifetime * 24*60*60*1000 #millisecs
+
 embedding_method = "tfidf"
 linkge_method = "weighted"
 d_metric = "cosine"
-d_threshod = 0.8
+d_threshod = 0.85
 multiplier = 0.75
 new_sentence = "Wearing mask is very necessary is reported by New York"
 new_id = 123
@@ -25,87 +30,135 @@ def get_last_tweet_id():
     last_tweet_id = last_tweet["tweet_id"]
     return last_tweet_id
 
+def get_last_tweet_date():
+    data = pd.read_csv("data_to_use.csv")
+    last_tweet = data.iloc[0]
+    last_tweet_date = last_tweet["date"]
+    return last_tweet_date
+
+def get_new_tweets_by_date(date):
+    return fs.get_newcoming_tweets_since_date(date)
+
 def get_new_tweets(last_tweet_id):
     last_tweet_snapshot = fs.get_tweet_snapshot_by_id(last_tweet_id)
     return fs.get_newcoming_tweets_since_document_by_snapshot(last_tweet_snapshot)
 
-
+def is_new_group_needed(last_update_date, tweet_date):
+    return tweet_date - last_update_date > news_group_lifetime
 
 def get_newsgroup_id_for_news(cluster_id, newcomer_date):
-    data = pd. read_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
+    try:
+        data = pd. read_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
+    except:
+        return None
     ng_of_cls_id = data.where(data["cluster_id"] == cluster_id)
-    ng_of_cls_id = ng_of_cls_id.sort_values(by=["date"], ascending=False)
+    ng_of_cls_id = ng_of_cls_id.dropna()
+    if ng_of_cls_id.empty:
+        return None
+    ng_of_cls_id = ng_of_cls_id.sort_values(by=["created_at"], ascending=False)
     last_ng_of_cluster = ng_of_cls_id.iloc[0]
-    # dt = datetime.now()
-    # dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-    dt = newcomer_date.replace(hour=0, minute=0, second=0, microsecond=0)
-    if last_ng_of_cluster.loc["date"] < str(dt):
+    if is_new_group_needed(last_ng_of_cluster["created_at"], newcomer_date):
         return None
     return last_ng_of_cluster["newsgroup_id"]
 
 def create_cluster(tweet_id):
     cluster_id = uuid.uuid1()
     cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=None)
-    new_cluster = pd.DataFrame([cluster_id, tweet_id])
+    new_cluster = pd.DataFrame([{0:cluster_id, 1:tweet_id}], index=[0])
     cluster_data = cluster_data.append(new_cluster)
+    cluster_data = cluster_data.reset_index(drop=True)
     cluster_data.to_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header = False, index=False)
-    return cluster_id
+    return cluster_id,
 
-def create_newsgroup(cluster_id, tweet):
+def create_newsgroup(cluster_id, tweet_date, tweet_username):
     newsgroup_id = uuid.uuid1()
-    data = pd. read_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
     new_newsgroup_local = {
         "newsgroup_id": newsgroup_id,
         "cluster_id": cluster_id,
-        "date": tweet["date"]
+        "created_at": tweet_date
     }
-    new_newsgroup_local = pd.DataFrame(new_newsgroup_local)
-    data = data.append(new_newsgroup_local)
-    data.to_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
+    new_newsgroup_local = pd.DataFrame(new_newsgroup_local, index=[0])
+    # print(new_newsgroup_local)
+    try:
+        data = pd. read_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
+        data = data.append(new_newsgroup_local, ignore_index=True)
+        data.reset_index(drop=True)
+    except:
+        data =new_newsgroup_local
+    data.to_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", index=False)
 
     new_newsgroup_db = {
-        "date": tweet["date"],
-        "group_leader": tweet["username"]
-        # ----------------------NEED TO BE FILLED--------------------------
+        "category": "-",
+        "category_map": {},
+        "created_at": int(tweet_date),
+        "group_leader": tweet_username,
+        "is_active": True,
+        "source_count_map": {},
+        "updated_at": int(tweet_date)
     }
-    fs.create_newsgroup(new_newsgroup_db, newsgroup_id)
+    # -------
+    return newsgroup_id, new_newsgroup_db
 
 def assign_news_to_cluster(cluster_id, tweet_id):
     cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=None)
-    new_cluster = pd.DataFrame([cluster_id, tweet_id])
-    cluster_data = cluster_data.append(new_cluster)
+    new_cluster = pd.DataFrame([[cluster_id, tweet_id]])
+    cluster_data = cluster_data.append(new_cluster, ignore_index=True)
     cluster_data.to_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=False, index=False)
 
 
-def update_tweet(tweet_id, newsgroup_id):
-    return None
+def update_database(tweet_id, newsgroup_id, newsgroup_data):
+    fs.update_for_newcomer(tweet_id, newsgroup_id, newsgroup_data)
 
 def save_newcomer_to_local(newcomer):
-    return None
+    data = pd.read_csv("data_to_use.csv")
+    newcomer_df = pd.DataFrame([newcomer])
+    new_data = newcomer_df.append(data, ignore_index=True)
+    new_data = new_data.reset_index(drop=True)
+    new_data.to_csv("data_to_use.csv")
+
+    texts = pd.read_csv("texts.csv", header=None)
+    new_text = pd.DataFrame([[newcomer["tweet_id"],newcomer["text"]]])
+    new_text_df = new_text.append(texts, ignore_index=True)
+    # new_text_df = new_text_df.reset_index(drop=True)
+    new_text_df.to_csv("texts.csv", header=False, index=False)
 
 
 def main():
+    time.sleep(delay)
     last_tweet_id = get_last_tweet_id()
-    newcoming_news = get_new_tweets(last_tweet_id)
-    for snapshot in newcoming_news:
-        newcomer = snapshot.to_dict()
+    # newcoming_news = get_new_tweets(last_tweet_id)
+    last_tweet_date = get_last_tweet_date()
+    newcoming_snapshots = get_new_tweets_by_date(last_tweet_date)
+    newcoming_news = []
+    for snapshot in newcoming_snapshots:
+        newcoming_news.append(snapshot.to_dict())
+    print(str(len(newcoming_news)), "Newcoming news were found")
+    for newcomer in newcoming_news:
+        print("Newcomer Tweet ID:", newcomer["tweet_id"])
         if newcomer["tweet_id"] == last_tweet_id:
             continue
+        newsgroup_data = None
         cluster_id = incrementor.perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, newcomer["text"], newcomer["tweet_id"])
         if cluster_id is None:
+            print("Bad text!")
+            continue
+        if cluster_id == -1:
+            print("Creating new cluster")
             new_cluster_id = create_cluster(newcomer["tweet_id"])
-            newsgroup_id = create_newsgroup(new_cluster_id, newcomer)
+            newsgroup_id, newsgroup_data = create_newsgroup(new_cluster_id, newcomer["date"], newcomer["username"])
         else:
+            print("Cluster found")
             assign_news_to_cluster(cluster_id, newcomer["tweet_id"])
             newsgroup_id = get_newsgroup_id_for_news(cluster_id, newcomer["date"])
             if newsgroup_id is None:
-                newsgroup_id = create_newsgroup(cluster_id, newcomer)
-        update_tweet(newcomer["tweet_id"], newsgroup_id)
+                print("Creating new news group")
+                newsgroup_id, newsgroup_data = create_newsgroup(cluster_id, newcomer["date"], newcomer["username"])
+        update_database(newcomer["tweet_id"], newsgroup_id, newsgroup_data)
         save_newcomer_to_local(newcomer)
 
 while True:
     main()
-    time.sleep(1)
+    time.sleep(check_freq)
 
 
 
@@ -123,4 +176,3 @@ while True:
     # print(c)
 
     # print(last_date)
-main()

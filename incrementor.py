@@ -27,15 +27,15 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, n
             stripped = tg.strip_punctuation(new_sentence)
             tokens = tg.filter_stop_words_and_stem(stripped)
             if repr(stripped.strip()) == repr(''):
-                print()
+                return None
                 # DON'T TAKE THE SENTENCE
         else:
-            print()
+            return None
             #DON'T TAKE THE SENTENCE
         # print(texts)
         # texts.loc[texts.shape[0]] = [new_id,tokens]
         texts.loc[new_id] = tokens
-        print(type(texts.index.values[0]))
+        # print(type(texts.index.values[0]))
         # print(texts)
         texts_np = texts.to_numpy(dtype="str").T[0]
         vectorizer = TfidfVectorizer(stop_words=stop_words, lowercase=True)
@@ -54,14 +54,15 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, n
         length = len(clusters[id])
         n_selection = int(np.log(length)/np.log(3)) + 1
         selected = np.random.choice(clusters[id], n_selection, replace=False)
-        selected_vectors = vectors.loc[selected.tolist()].to_numpy()
+        selected_vectors = vectors.loc[selected].to_numpy()
+        # selected_vectors = vectors.loc[selected.tolist()].to_numpy()
         # distances = cosine_similarity([vectors.loc[new_id].to_numpy()], selected_vectors)
         # print(distances)
         distances = np.zeros(n_selection)
         for v in range(n_selection):
             # distances[v] = pdist(np.array([selected_vectors[v], vectors.loc[new_id]]))
             distances[v] = cosine(selected_vectors[v], vectors.loc[new_id].to_numpy())
-            print(distances[v])
+            # print(distances[v])
         mean_distance = np.mean(distances)
         distance_dict[id] = mean_distance
 
@@ -74,7 +75,9 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, n
             print(texts.loc[c])
         print("---------ARTICLE--------")
         print(new_sentence)
+        return cluster_of_min_d
     else:
         print("New cluster should be created")
+        return -1
 
 # perform()
