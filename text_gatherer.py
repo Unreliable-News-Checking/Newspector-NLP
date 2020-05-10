@@ -6,35 +6,16 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from nltk.stem import SnowballStemmer
+from services import preprocessing as pre
 
 n_data = 2000
 # ps = PorterStemmer()
-ss = SnowballStemmer("english")
-
-def filter_stop_words_and_stem(sentence):
-    stop_words = set(stopwords.words('english'))
-    stop_words.add("s")
-    stop_words.add("news")
-    stop_words.add("live")
-    stop_words.add("follow")
-    word_tokens = word_tokenize(sentence)
-
-
-
-    tokens = [ss.stem(w) for w in word_tokens if w not in stop_words and w[0] != "@"]
-    sent = ""
-    for t in tokens:
-        sent += t + " "
-
-    return sent[:len(sent)-1].lower()
-
-def strip_punctuation(sentence):
-    return re.sub(r'[^\w\s]', '', sentence)
 
 
 stop_words = set(stopwords.words('english'))
 
 data = pd.read_csv("tweets.csv")
+data = data[:2000]
 texts = []
 # data = data[-n_data:]
 original_texts = []
@@ -43,8 +24,8 @@ for index, row in data.iterrows():
     text = row["text"]
     # print(row["date"])
     if text == text:
-        stripped = strip_punctuation(text)
-        tokens = filter_stop_words_and_stem(stripped)
+        stripped = pre.strip_punctuation(text)
+        tokens = pre.filter_stop_words_and_stem(stripped)
         if repr(stripped.strip()) == repr(''):
             print(row["tweet_id"])
             print(row["username"])
@@ -59,11 +40,11 @@ for index, row in data.iterrows():
         print()
         data = data.drop(index, axis=0)
 
+# data = data.drop(["news_group_id"], axis = 1)
 data = data.reset_index(drop=True)
 print(data.shape)
 df = pd.DataFrame(texts, index=data.loc[:]["tweet_id"].to_list())
 df.to_csv("texts.csv", header=False)
-
 df = pd.DataFrame(original_texts)
 df.to_csv("original_texts.csv", header=False, index=False)
 

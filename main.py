@@ -1,6 +1,3 @@
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 import pandas as pd
 from datetime import datetime
 import datetime
@@ -8,11 +5,13 @@ import uuid
 from services import firestore_services
 import incrementor
 import time
+from services import preprocessing as pre
+from nltk.corpus import stopwords
 
-check_freq = 60 #sec
-delay = 1 #sec
-news_group_lifetime = 48 #days
-news_group_lifetime = news_group_lifetime * 24*60*60*1000 #millisecs
+check_freq = 120 #sec
+delay = 2 #sec
+news_group_lifetime = 48 #hours
+news_group_lifetime = news_group_lifetime * 60 * 60 * 1000  #millisecs
 
 embedding_method = "tfidf"
 linkge_method = "weighted"
@@ -23,6 +22,20 @@ new_sentence = "Wearing mask is very necessary is reported by New York"
 new_id = 123
 fs = firestore_services.FireStoreServices("newspector-backend-firebase-adminsdk-ws3xc-bd1c31a298.json")
 
+
+stop_words = set(stopwords.words('english'))
+
+def preprocess(text):
+    # vectors = pd.read_csv("vectors/" + embedding_method + ".csv", header=None)
+    if text == text:
+        stripped = pre.strip_punctuation(text)
+        tokens = pre.filter_stop_words_and_stem(stripped)
+        if repr(stripped.strip()) == repr(''):
+            return None
+            # DON'T TAKE THE SENTENCE
+    else:
+        return None
+    return tokens
 
 def get_last_tweet_id():
     data = pd.read_csv("data_to_use.csv")
@@ -109,7 +122,7 @@ def assign_news_to_cluster(cluster_id, tweet_id):
 def update_database(tweet_id, newsgroup_id, newsgroup_data):
     fs.update_for_newcomer(tweet_id, newsgroup_id, newsgroup_data)
 
-def save_newcomer_to_local(newcomer):
+def save_newcomer_to_local(newcomer, text):
     data = pd.read_csv("data_to_use.csv")
     newcomer_df = pd.DataFrame([newcomer])
     new_data = newcomer_df.append(data, ignore_index=True)
@@ -117,14 +130,14 @@ def save_newcomer_to_local(newcomer):
     new_data.to_csv("data_to_use.csv")
 
     texts = pd.read_csv("texts.csv", header=None)
-    new_text = pd.DataFrame([[newcomer["tweet_id"],newcomer["text"]]])
+    new_text = pd.DataFrame([[newcomer["tweet_id"],text]])
     new_text_df = new_text.append(texts, ignore_index=True)
     # new_text_df = new_text_df.reset_index(drop=True)
     new_text_df.to_csv("texts.csv", header=False, index=False)
 
 
 def main():
-    time.sleep(delay)
+    print("Started Checking...")
     last_tweet_id = get_last_tweet_id()
     # newcoming_news = get_new_tweets(last_tweet_id)
     last_tweet_date = get_last_tweet_date()
@@ -134,27 +147,38 @@ def main():
         newcoming_news.append(snapshot.to_dict())
     print(str(len(newcoming_news)), "Newcoming news were found")
     for newcomer in newcoming_news:
+        print()
         print("Newcomer Tweet ID:", newcomer["tweet_id"])
+        print("By:", newcomer["username"])
         if newcomer["tweet_id"] == last_tweet_id:
             continue
         newsgroup_data = None
-        cluster_id = incrementor.perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, newcomer["text"], newcomer["tweet_id"])
-        if cluster_id is None:
+        preprocessed = preprocess(newcomer["text"])
+        if preprocessed is None:
             print("Bad text!")
             continue
-        if cluster_id == -1:
-            print("Creating new cluster")
+        cluster_id = incrementor.perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, newcomer["text"], newcomer["tweet_id"])
+        if cluster_id is None:
+            print("Creating new cluster...")
             new_cluster_id = create_cluster(newcomer["tweet_id"])
             newsgroup_id, newsgroup_data = create_newsgroup(new_cluster_id, newcomer["date"], newcomer["username"])
+            print("New cluster and news group are created!")
         else:
-            print("Cluster found")
+            print("Cluster found!")
             assign_news_to_cluster(cluster_id, newcomer["tweet_id"])
             newsgroup_id = get_newsgroup_id_for_news(cluster_id, newcomer["date"])
             if newsgroup_id is None:
-                print("Creating new news group")
+                print("Creating new news group...")
                 newsgroup_id, newsgroup_data = create_newsgroup(cluster_id, newcomer["date"], newcomer["username"])
+                print("New news group is created!")
+            else:
+                print("Newsgroup found!")
         update_database(newcomer["tweet_id"], newsgroup_id, newsgroup_data)
-        save_newcomer_to_local(newcomer)
+        print("Database is updated!")
+        save_newcomer_to_local(newcomer, preprocessed)
+        print("Local data is updated!")
+        time.sleep(delay)
+    print("Finished Checking!\n")
 
 while True:
     main()

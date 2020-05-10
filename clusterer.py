@@ -7,7 +7,8 @@ def clustering(code, threshold):
     data = pd.read_csv("data_to_use.csv")
     links = pd.read_csv("linkages/"+code+".csv", header=None).to_numpy()
     clusters = fcluster(links, criterion="distance", t=threshold)
-    texts = pd.read_csv("original_texts.csv", header=None).to_numpy()
+    # texts = pd.read_csv("original_texts.csv", header=None).to_numpy()
+    texts= data["text"]
     # texts = pd.read_csv("texts.csv", header=None).to_numpy()
     min = np.min(clusters)
     max = np.max(clusters)
@@ -17,10 +18,10 @@ def clustering(code, threshold):
     relation = []
     for i in range(min, max+1):
         representation += "-----------------CLUSTER" + str(i) + "-----------------\n"
-        cls = texts[np.where(clusters==i)]
+        cls = texts.iloc[np.where(clusters==i)]
         # print(cls.shape)
         for text in cls:
-            representation += "-------ARTICLE-------\n" + text[0] + "\n"
+            representation += "-------ARTICLE-------\n" + text + "\n"
         representation += "\n"
         cluster_id = uuid.uuid1()
         # print(np.where(clusters==i))
@@ -36,6 +37,12 @@ def clustering(code, threshold):
     df.to_csv("clusters/" + code + "_" + str(threshold) + ".csv", header = False, index=False)
 
 
-clustering("tfidf_weighted_cosine", 0.85)
+# clustering("tfidf_weighted_cosine", 0.85)
+# clustering("wmd_google_news_ward", 0.3)
+# clustering("wmd_google_news_weighted", 0.25)
+# clustering("wmd_self_train_weighted", 0.1)
+# clustering("wmd_self_train_ward", 0.2)
 # clustering("tfdif_single_cosine", 0.8)
 # clustering("tfdif_weighted_dice", 0.8)
+clustering("doc2vec_self_cosine_complete", 0.8)
+# clustering("doc2vec_self_cosine_weighted", 0.7)

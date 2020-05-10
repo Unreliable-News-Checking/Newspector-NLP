@@ -37,8 +37,10 @@ for i, row in enumerate(vecs):
 # print(a[0].shape)
 
 # methods = ["single", "complete", "average", "weighted", "centroid", "median", "ward"]
-methods = ["single", "complete", "average", "weighted"]
-metrics = ["cosine", "jaccard", "dice"]
+# methods = ["single", "complete", "average", "weighted"]
+# metrics = ["cosine", "jaccard", "dice"]
+methods = ["weighted"]
+metrics = ["cosine"]
 for i in methods:
     for j in metrics:
         print("For", i, "method and", j, "metric")
