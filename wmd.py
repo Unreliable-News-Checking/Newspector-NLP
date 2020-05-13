@@ -56,23 +56,23 @@ data = pd.read_csv("data_to_use.csv")
 texts = pd.read_csv("texts.csv", header=None).to_numpy(dtype="str").T[1]
 
 
-title = "doc2vec_self_cosine"
-print("Started", title)
-tagged_docs = []
-for i in range(texts.shape[0]):
-    tagged_docs.append(TaggedDocument(words=word_tokenize(texts[i]), tags=[str(i)]))
-# print(texts[0].split())
-# documents = [TaggedDocument(doc.split(), [str(i)]) for i, doc in enumerate(texts)]
-model = Doc2Vec(min_count=1)
-model.build_vocab(tagged_docs)
-model.train(tagged_docs, epochs=model.epochs, total_examples=model.corpus_count)
-# model = Doc2Vec(documents)
-# model.init_sims(replace=False)
-distances = dist(model, texts, "cosine", "doc2vec")
-df = pd.DataFrame(distances)
-df.to_csv("distances/" + title + ".csv", index=False, header=False)
-create_links(distances, title)
-print("Finished", title, "\n")
+# title = "doc2vec_self_cosine"
+# print("Started", title)
+# tagged_docs = []
+# for i in range(texts.shape[0]):
+#     tagged_docs.append(TaggedDocument(words=word_tokenize(texts[i]), tags=[str(i)]))
+# # print(texts[0].split())
+# # documents = [TaggedDocument(doc.split(), [str(i)]) for i, doc in enumerate(texts)]
+# model = Doc2Vec(min_count=1)
+# model.build_vocab(tagged_docs)
+# model.train(tagged_docs, epochs=model.epochs, total_examples=model.corpus_count)
+# # model = Doc2Vec(documents)
+# # model.init_sims(replace=False)
+# distances = dist(model, texts, "cosine", "doc2vec")
+# df = pd.DataFrame(distances)
+# df.to_csv("distances/" + title + ".csv", index=False, header=False)
+# create_links(distances, title)
+# print("Finished", title, "\n")
 
 tokens = []
 for i in range(texts.shape[0]):
@@ -118,28 +118,59 @@ df = pd.DataFrame(distances)
 df.to_csv("distances/" + title + ".csv", index=False, header=False)
 create_links(distances, title)
 print("Finished", title, "\n")
+#
+# title = "word2vec_google_news_wmd"
+# print("Started", title)
+# model = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin.gz', binary=True)
+# model.init_sims(replace=True)
+# distances = dist(model, texts, "wmd", "word2vec")
+# df = pd.DataFrame(distances)
+# df.to_csv("distances/" + title + ".csv", index=False, header=False)
+# create_links(distances, title)
+# print("Finished", title, "\n")
 
-title = "word2vec_google_news_wmd"
-print("Started", title)
-model = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin.gz', binary=True)
-model.init_sims(replace=True)
-distances = dist(model, texts, "wmd", "word2vec")
-df = pd.DataFrame(distances)
-df.to_csv("distances/" + title + ".csv", index=False, header=False)
-create_links(distances, title)
-print("Finished", title, "\n")
+# title = "word2vec_combined_wmd"
+# print("Started", title)
+# model = Word2Vec(tokens)
+# model.init_sims(replace=True)
+# model.intersect_word2vec_format('GoogleNews-vectors-negative300.bin.gz', lockf=1.0, binary=True)
+# model.train(texts)
+# distances = dist(model, texts, "wmd", "word2vec")
+# df = pd.DataFrame(distances)
+# df.to_csv("distances/" + title + ".csv", index=False, header=False)
+# create_links(distances, title)
+# print("Finished", title, "\n")
 
-title = "word2vec_combined_wmd"
-print("Started", title)
-model = Word2Vec(tokens)
-model.init_sims(replace=True)
-model.intersect_word2vec_format('GoogleNews-vectors-negative300.bin', lockf=1.0, binary=True)
-model.train(texts)
-distances = dist(model, texts, "wmd", "word2vec")
-df = pd.DataFrame(distances)
-df.to_csv("distances/" + title + ".csv", index=False, header=False)
-create_links(distances, title)
-print("Finished", title, "\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # model1 = Word2Vec(texts)
 # model1.init_sims(replace=True)

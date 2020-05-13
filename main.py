@@ -16,7 +16,8 @@ news_group_lifetime = news_group_lifetime * 60 * 60 * 1000  #millisecs
 embedding_method = "tfidf"
 linkge_method = "weighted"
 d_metric = "cosine"
-d_threshod = 0.85
+d_threshod = 0.8
+inc_d_threshold = d_threshod
 multiplier = 0.75
 new_sentence = "Wearing mask is very necessary is reported by New York"
 new_id = 123
@@ -107,7 +108,13 @@ def create_newsgroup(cluster_id, tweet_date, tweet_username):
         "group_leader": tweet_username,
         "is_active": True,
         "source_count_map": {},
-        "updated_at": int(tweet_date)
+        "updated_at": int(tweet_date),
+        "first_reporter": "",
+        "close_second": "",
+        "late_comer": "",
+        "slow_poke": "",
+        "follow_up": "",
+        "count": 0
     }
     # -------
     return newsgroup_id, new_newsgroup_db
@@ -123,7 +130,7 @@ def update_database(tweet_id, newsgroup_id, newsgroup_data):
     fs.update_for_newcomer(tweet_id, newsgroup_id, newsgroup_data)
 
 def save_newcomer_to_local(newcomer, text):
-    data = pd.read_csv("data_to_use.csv")
+    data = pd.read_csv("data_to_use.csv", index_col=0)
     newcomer_df = pd.DataFrame([newcomer])
     new_data = newcomer_df.append(data, ignore_index=True)
     new_data = new_data.reset_index(drop=True)
@@ -157,7 +164,7 @@ def main():
         if preprocessed is None:
             print("Bad text!")
             continue
-        cluster_id = incrementor.perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, newcomer["text"], newcomer["tweet_id"])
+        cluster_id = incrementor.perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_threshold, multiplier, newcomer["text"], newcomer["tweet_id"])
         if cluster_id is None:
             print("Creating new cluster...")
             new_cluster_id = create_cluster(newcomer["tweet_id"])

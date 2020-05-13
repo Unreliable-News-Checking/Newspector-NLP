@@ -15,7 +15,7 @@ n_data = 2000
 stop_words = set(stopwords.words('english'))
 
 data = pd.read_csv("tweets.csv")
-data = data[:2000]
+data = data[:200]
 texts = []
 # data = data[-n_data:]
 original_texts = []

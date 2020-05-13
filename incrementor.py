@@ -15,7 +15,7 @@ from scipy.spatial.distance import cosine
 # def create_newsgroup(news, cluster_id):
 
 
-def perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, new_sentence, new_id):
+def perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_threshold, multiplier, new_sentence, new_id):
     stop_words = set(stopwords.words('english'))
     cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=None).to_numpy()
     vectors = None
@@ -43,12 +43,9 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, n
     for id in clusters:
         length = len(clusters[id])
         n_selection = int(np.log(length)/np.log(3)) + 1
-        selected = np.random.choice(clusters[id], n_selection, replace=False)
-        # print("selected:", selected)
+        # selected = np.random.choice(clusters[id], n_selection, replace=False)
+        selected = clusters[id]
         selected_vectors = vectors.loc[selected].to_numpy()
-        # selected_vectors = vectors.loc[selected.tolist()].to_numpy()
-        # distances = cosine_similarity([vectors.loc[new_id].to_numpy()], selected_vectors)
-        # print(distances)
         distances = np.zeros(n_selection)
         for v in range(n_selection):
             # distances[v] = pdist(np.array([selected_vectors[v], vectors.loc[new_id]]))
@@ -58,7 +55,7 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, multiplier, n
         distance_dict[id] = mean_distance
 
     min_d = min(distance_dict.values())
-    if min_d < d_threshod:
+    if min_d < inc_d_threshold:
         cluster_of_min_d = [k for k, v in distance_dict.items() if v == min_d][0]
         # print(cluster_of_min_d)
         for c in clusters[cluster_of_min_d]:

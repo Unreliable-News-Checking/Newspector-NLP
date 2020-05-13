@@ -36,13 +36,16 @@ for i, row in enumerate(vecs):
 # print(np.sum(a[0] == 0))
 # print(a[0].shape)
 
-# methods = ["single", "complete", "average", "weighted", "centroid", "median", "ward"]
+methods = ["single", "complete", "average", "weighted", "centroid", "median", "ward"]
 # methods = ["single", "complete", "average", "weighted"]
-# metrics = ["cosine", "jaccard", "dice"]
-methods = ["weighted"]
-metrics = ["cosine"]
+metrics = ["cosine", "jaccard", "dice"]
+# methods = ["weighted"]
+# metrics = ["cosine"]
 for i in methods:
     for j in metrics:
         print("For", i, "method and", j, "metric")
-        compute_linkages(vecs, i, j)
+        try:
+            compute_linkages(vecs, i, j)
+        except:
+            print("Unsuccessful!")
 

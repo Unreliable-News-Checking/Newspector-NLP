@@ -38,11 +38,12 @@ def clustering(code, threshold):
 
 
 # clustering("tfidf_weighted_cosine", 0.85)
-# clustering("wmd_google_news_ward", 0.3)
+clustering("tfidf_weighted_cosine", 0.8)
+# clustering("wmd_google_news_complete", 0.3)
 # clustering("wmd_google_news_weighted", 0.25)
 # clustering("wmd_self_train_weighted", 0.1)
 # clustering("wmd_self_train_ward", 0.2)
 # clustering("tfdif_single_cosine", 0.8)
 # clustering("tfdif_weighted_dice", 0.8)
-clustering("doc2vec_self_cosine_complete", 0.8)
+# clustering("doc2vec_self_cosine_complete", 0.8)
 # clustering("doc2vec_self_cosine_weighted", 0.7)
