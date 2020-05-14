@@ -43,7 +43,7 @@ class FireStoreServices(object):
 
         # update newsgroup document
         if newsgroup_data is not None:  # a new newsgroup created
-            news_tag = "first_comer"
+            news_tag = "first_reporter"
             new_member = 1
             newsgroup_data["count"] = 1
             newsgroup_data["source_count_map"][tweet_ref["username"]] = 1
