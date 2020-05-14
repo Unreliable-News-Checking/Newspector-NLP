@@ -49,7 +49,7 @@ class FireStoreServices(object):
             newsgroup_data["source_count_map"][tweet_ref["username"]] = 1
             newsgroup_data["category_map"][tweet_ref["category"]] = 1
             newsgroup_data["category"] = tweet_ref["category"]
-            newsgroup_data[news_tag] = tweet_ref["id"]
+            newsgroup_data[news_tag] = tweet_ref["documentID"]
             transaction.set(newsgroup_ref, newsgroup_data)
         else:
             newsgroup_data = newsgroup_ref.get(transaction=transaction).to_dict()
@@ -90,7 +90,7 @@ class FireStoreServices(object):
                     u'category_map': category_map,
                     u'category': perceived_category,
                     u'updated_at': tweet_ref["date"],
-                    [news_tag]: tweet_ref["id"]
+                    [news_tag]: tweet_ref["documentID"]
                 }
 
             if merge:
