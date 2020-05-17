@@ -2,7 +2,6 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud import firestore as fs
-import pandas as pd
 
 
 class FireStoreServices(object):
@@ -26,13 +25,13 @@ class FireStoreServices(object):
     def get_newcoming_tweets_since_date(self, date):
         return self.db.collection(u'tweets').order_by(u'date').where(u"date", ">", int(date)).stream()
 
-    def update_for_newcomer(self, tweet_id, newsgroup_id, newsgroup_data):
+    def update_for_newcomer(self, tweet_id, newsgroup_id, create_newsgroup_firestore):
         transaction = self.db.transaction()
-        update_for_newcomer_transactional(transaction, self.db, tweet_id, newsgroup_id, newsgroup_data)
+        update_for_newcomer_transactional(transaction, self.db, tweet_id, newsgroup_id, create_newsgroup_firestore)
 
 
 @fs.transactional
-def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, newsgroup_data):
+def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, create_newsgroup_firestore):
     newsgroup_ref = db.collection(u"news_groups").document(str(newsgroup_id))
     news_tag = "slow_poke"  # used for updating tag of newcomer and tag count of account
     new_member = 0  # used for setting membership count of account
@@ -51,12 +50,12 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
     account_data = account_ref.get(transaction=transaction).to_dict()
 
     # update newsgroup document
-    if newsgroup_data is not None:  # a new newsgroup created
+    if create_newsgroup_firestore:  # a new newsgroup created
         merge = True
         news_tag = "first_reporter"
         new_member = 1
-        source_count_map = newsgroup_data["source_count_map"]
-        category_map = newsgroup_data["category_map"]
+        source_count_map = dict()
+        category_map = dict()
         source_count_map[tweet_dict["username"]] = 1
         category_map[tweet_dict["category"]] = 1
 
@@ -69,7 +68,11 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
             u'category': tweet_dict["category"],
             u'updated_at': tweet_dict["date"],
             u'created_at': tweet_dict["date"],
-            f"{news_tag}": tweet_ref.id
+            u'first_reporter': tweet_ref.id,
+            u'close_second': "",
+            u'late_comer': "",
+            u'slow_poke': "",
+            u'follow_up': ""
         }
     else:  # the newsgroup already exists
         # Read Newsgroup Document
