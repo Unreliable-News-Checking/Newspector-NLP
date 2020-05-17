@@ -1,7 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from google.cloud import firestore
+from google.cloud import firestore as fs
 import pandas as pd
 
 
@@ -26,7 +26,7 @@ class FireStoreServices(object):
     def get_newcoming_tweets_since_date(self, date):
         return self.db.collection(u'tweets').order_by(u'date').where(u"date", ">", int(date)).stream()
 
-    @firestore.transactional
+    @fs.transactional
     def update_for_newcomer(self, tweet_id, newsgroup_id, newsgroup_data):
         transaction = self.db.transaction()
         newsgroup_ref = self.db.collection(u"news_groups").document(str(newsgroup_id))
