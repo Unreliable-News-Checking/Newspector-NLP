@@ -66,7 +66,7 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
             u'category_map': category_map,
             u'category': tweet_dict["category"],
             u'updated_at': tweet_dict["date"],
-            [news_tag]: tweet_ref.id
+            f"{news_tag}": tweet_ref.id
         }
     else:  # the newsgroup already exists
         # Read Newsgroup Document
@@ -108,7 +108,7 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
             u'category_map': category_map,
             u'category': perceived_category,
             u'updated_at': tweet_dict["date"],
-            [news_tag]: tweet_ref.id
+            f"{news_tag}": tweet_ref.id
         }
 
     # update Tweet Document
@@ -124,7 +124,7 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
     transaction.update(account_ref, {
         u'news_count': account_data["news_count"] + 1,
         u'news_group_membership_count': account_data["news_group_membership_count"] + new_member,
-        [news_tag]: account_data[news_tag] + 1
+        f"{news_tag}": account_data[news_tag] + 1
     })
 
 
