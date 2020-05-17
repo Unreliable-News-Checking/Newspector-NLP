@@ -26,9 +26,12 @@ class FireStoreServices(object):
     def get_newcoming_tweets_since_date(self, date):
         return self.db.collection(u'tweets').order_by(u'date').where(u"date", ">", int(date)).stream()
 
-    @fs.transactional
     def update_for_newcomer(self, tweet_id, newsgroup_id, newsgroup_data):
         transaction = self.db.transaction()
+        self.update_for_newcomer_transactional(transaction, tweet_id, newsgroup_id, newsgroup_data)
+
+    @fs.transactional
+    def update_for_newcomer_transactional(self, transaction, tweet_id, newsgroup_id, newsgroup_data):
         newsgroup_ref = self.db.collection(u"news_groups").document(str(newsgroup_id))
         news_tag = "slow_poke"  # used for updating tag of newcomer and tag count of account
         new_member = 0  # used for setting membership count of account
