@@ -62,10 +62,13 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
 
         data_to_update = {
             u'count': 1,
+            u'is_active': True,
+            u'group_leader': tweet_dict["username"],
             u'source_count_map': source_count_map,
             u'category_map': category_map,
             u'category': tweet_dict["category"],
             u'updated_at': tweet_dict["date"],
+            u'created_at': tweet_dict["date"],
             f"{news_tag}": tweet_ref.id
         }
     else:  # the newsgroup already exists
