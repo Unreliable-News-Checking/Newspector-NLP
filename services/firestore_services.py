@@ -30,35 +30,46 @@ class FireStoreServices(object):
         transaction = self.db.transaction()
         update_for_newcomer_transactional(transaction, self.db, tweet_id, newsgroup_id, newsgroup_data)
 
+
 @fs.transactional
 def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, newsgroup_data):
     newsgroup_ref = db.collection(u"news_groups").document(str(newsgroup_id))
     news_tag = "slow_poke"  # used for updating tag of newcomer and tag count of account
     new_member = 0  # used for setting membership count of account
 
-    # update tweet
+    # Get tweet
     tweet_snapshots = db.collection(u"tweets").where(u"tweet_id", "==", str(tweet_id)).stream()
     tweet_ref = None
     tweet_dict = None
-    doc_id = None
     for snapshot in tweet_snapshots:
         tweet_ref = snapshot.reference
-        doc_id = tweet_ref.id
         tweet_dict = snapshot.to_dict()
         break
-    transaction.update(tweet_ref, {u"news_group_id": str(newsgroup_id)})
+
+    # Read Account Document
+    account_ref = db.collection(u"accounts").document(tweet_dict["username"])
+    account_data = account_ref.get(transaction=transaction).to_dict()
 
     # update newsgroup document
     if newsgroup_data is not None:  # a new newsgroup created
+        merge = True
         news_tag = "first_reporter"
         new_member = 1
-        newsgroup_data["count"] = 1
-        newsgroup_data["source_count_map"][tweet_dict["username"]] = 1
-        newsgroup_data["category_map"][tweet_dict["category"]] = 1
-        newsgroup_data["category"] = tweet_dict["category"]
-        newsgroup_data[news_tag] = doc_id
-        transaction.set(newsgroup_ref, newsgroup_data)
-    else:
+        source_count_map = newsgroup_data["source_count_map"]
+        category_map = newsgroup_data["category_map"]
+        source_count_map[tweet_dict["username"]] = 1
+        category_map[tweet_dict["category"]] = 1
+
+        data_to_update = {
+            u'count': 1,
+            u'source_count_map': source_count_map,
+            u'category_map': category_map,
+            u'category': tweet_dict["category"],
+            u'updated_at': tweet_dict["date"],
+            [news_tag]: tweet_ref.id
+        }
+    else:  # the newsgroup already exists
+        # Read Newsgroup Document
         newsgroup_data = newsgroup_ref.get(transaction=transaction).to_dict()
         source_count_map = newsgroup_data["source_count_map"]
         category_map = newsgroup_data["category_map"]
@@ -92,27 +103,30 @@ def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, n
             perceived_category = tweet_dict["category"]
 
         data_to_update = {
-                u'count': newsgroup_data["count"] + 1,
-                u'source_count_map': source_count_map,
-                u'category_map': category_map,
-                u'category': perceived_category,
-                u'updated_at': tweet_dict["date"],
-                [news_tag]: doc_id
-            }
+            u'count': newsgroup_data["count"] + 1,
+            u'source_count_map': source_count_map,
+            u'category_map': category_map,
+            u'category': perceived_category,
+            u'updated_at': tweet_dict["date"],
+            [news_tag]: tweet_ref.id
+        }
 
-        if merge:
-            transaction.set(newsgroup_ref, data_to_update, merge=True)
-        else:
-            transaction.update(newsgroup_ref, data_to_update)
+    # update Tweet Document
+    transaction.update(tweet_ref, {u"news_group_id": str(newsgroup_id)})
 
-    # update account
-    account_ref = db.collection(u"accounts").document(tweet_dict["username"])
-    account_data = account_ref.get(transaction=transaction).to_dict()
+    # update Newsgroup Document
+    if merge:
+        transaction.set(newsgroup_ref, data_to_update, merge=True)
+    else:
+        transaction.update(newsgroup_ref, data_to_update)
+
+    # update Account Document
     transaction.update(account_ref, {
         u'news_count': account_data["news_count"] + 1,
         u'news_group_membership_count': account_data["news_group_membership_count"] + new_member,
         [news_tag]: account_data[news_tag] + 1
     })
+
 
 def add_tweet(self, tweet):
     self.db.collection('tweets').document().set(tweet)
