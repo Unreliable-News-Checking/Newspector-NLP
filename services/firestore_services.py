@@ -25,25 +25,26 @@ class FireStoreServices(object):
     def get_newcoming_tweets_since_date(self, date):
         return self.db.collection(u'tweets').order_by(u'date').where(u"date", ">", int(date)).stream()
 
-    def update_for_newcomer(self, tweet_id, newsgroup_id, create_newsgroup_firestore):
+    def update_for_newcomer(self, tweet_dict, newsgroup_id, create_newsgroup_firestore):
         transaction = self.db.transaction()
-        update_for_newcomer_transactional(transaction, self.db, tweet_id, newsgroup_id, create_newsgroup_firestore)
+        update_for_newcomer_transactional(transaction, self.db, tweet_dict, newsgroup_id, create_newsgroup_firestore)
 
 
 @fs.transactional
-def update_for_newcomer_transactional(transaction, db, tweet_id, newsgroup_id, create_newsgroup_firestore):
+def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id, create_newsgroup_firestore):
     newsgroup_ref = db.collection(u"news_groups").document(str(newsgroup_id))
     news_tag = "slow_poke"  # used for updating tag of newcomer and tag count of account
     new_member = 0  # used for setting membership count of account
 
     # Get tweet
-    tweet_snapshots = db.collection(u"tweets").where(u"tweet_id", "==", str(tweet_id)).stream()
-    tweet_ref = None
-    tweet_dict = None
-    for snapshot in tweet_snapshots:
-        tweet_ref = snapshot.reference
-        tweet_dict = snapshot.to_dict()
-        break
+    # tweet_snapshots = db.collection(u"tweets").where(u"tweet_id", "==", str(tweet_id)).stream()
+    # tweet_ref = None
+    # tweet_dict = None
+    # for snapshot in tweet_snapshots:
+    #     tweet_ref = snapshot.reference
+    #     tweet_dict = snapshot.to_dict()
+    #     break
+    tweet_ref = tweet_dict["document_reference"]
 
     # Read Account Document
     account_ref = db.collection(u"accounts").document(tweet_dict["username"])

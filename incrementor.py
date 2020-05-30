@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.spatial.distance import pdist
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from nltk.corpus import stopwords
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import cosine
@@ -21,17 +21,18 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_thresho
     vectors = None
     texts = pd.read_csv("texts.csv", header=None, index_col=0)
     if embedding_method == "tfidf":
-            #DON'T TAKE THE SENTENCE
-        # print(texts)
-        # texts.loc[texts.shape[0]] = [new_id,tokens]
-        texts.loc[new_id] = new_sentence
-        # print(type(texts.index.values[0]))
-        # print(texts)
-        texts_np = texts.to_numpy(dtype="str").T[0]
         vectorizer = TfidfVectorizer(stop_words=stop_words, lowercase=True)
-        vectors = vectorizer.fit_transform(texts_np)
-        vectors = pd.DataFrame(vectors.toarray(), index=list(texts.index.values))
-        # print(vectors)
+    else:
+        vectorizer = CountVectorizer(stop_words=stop_words, lowercase=True, binary=True)
+    # print(texts)
+    # texts.loc[texts.shape[0]] = [new_id,tokens]
+    texts.loc[new_id] = new_sentence
+    # print(type(texts.index.values[0]))
+    # print(texts)
+    texts_np = texts.to_numpy(dtype="str").T[0]
+    vectors = vectorizer.fit_transform(texts_np)
+    vectors = pd.DataFrame(vectors.toarray(), index=list(texts.index.values))
+    # print(vectors)
     clusters = {}
     for row in cluster_data:
         if row[0] in clusters:
@@ -45,6 +46,7 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_thresho
         n_selection = int(np.log(length)/np.log(3)) + 1
         # selected = np.random.choice(clusters[id], n_selection, replace=False)
         selected = clusters[id]
+        n_selection = length
         selected_vectors = vectors.loc[selected].to_numpy()
         distances = np.zeros(n_selection)
         for v in range(n_selection):
@@ -52,7 +54,9 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_thresho
             distances[v] = cosine(selected_vectors[v], vectors.loc[new_id].to_numpy())
             # print(distances[v])
         mean_distance = np.mean(distances)
-        distance_dict[id] = mean_distance
+        min_distance = np.min(distances)
+        # distance_dict[id] = mean_distance
+        distance_dict[id] = min_distance
 
     min_d = min(distance_dict.values())
     if min_d < inc_d_threshold:

@@ -7,17 +7,18 @@ import incrementor
 import time
 from services import preprocessing as pre
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
 check_freq = 120 #sec
-delay = 2 #sec
+delay = 1 #sec
 news_group_lifetime = 48 #hours
 news_group_lifetime = news_group_lifetime * 60 * 60 * 1000  #millisecs
 
 embedding_method = "tfidf"
 linkge_method = "weighted"
 d_metric = "cosine"
-d_threshod = 0.8
-inc_d_threshold = d_threshod
+d_threshod = 0.85
+inc_d_threshold = 0.85
 multiplier = 0.75
 new_sentence = "Wearing mask is very necessary is reported by New York"
 new_id = 123
@@ -32,6 +33,9 @@ def preprocess(text):
         stripped = pre.strip_punctuation(text)
         tokens = pre.filter_stop_words_and_stem(stripped)
         if repr(stripped.strip()) == repr(''):
+            return None
+            # DON'T TAKE THE SENTENCE
+        if len(word_tokenize(text)) < 4:
             return None
             # DON'T TAKE THE SENTENCE
     else:
@@ -82,7 +86,7 @@ def create_cluster(tweet_id):
     cluster_data = cluster_data.append(new_cluster)
     cluster_data = cluster_data.reset_index(drop=True)
     cluster_data.to_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header = False, index=False)
-    return cluster_id,
+    return cluster_id
 
 def create_newsgroup(cluster_id, tweet_date, tweet_username):
     newsgroup_id = uuid.uuid1()
@@ -101,9 +105,8 @@ def create_newsgroup(cluster_id, tweet_date, tweet_username):
         data = new_newsgroup_local
     data.to_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", index=False)
 
-    new_newsgroup_db = True
     # -------
-    return newsgroup_id, new_newsgroup_db
+    return newsgroup_id
 
 def assign_news_to_cluster(cluster_id, tweet_id):
     cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=None)
@@ -122,6 +125,12 @@ def save_newcomer_to_local(newcomer, text):
     new_data = new_data.reset_index(drop=True)
     new_data.to_csv("data_to_use.csv")
 
+    # data = pd.read_csv("tweets.csv", index_col=0)
+    # newcomer_df = pd.DataFrame([newcomer])
+    # new_data = newcomer_df.append(data, ignore_index=True)
+    # new_data = new_data.reset_index(drop=True)
+    # new_data.to_csv("tweets.csv")
+
     texts = pd.read_csv("texts.csv", header=None)
     new_text = pd.DataFrame([[newcomer["tweet_id"],text]])
     new_text_df = new_text.append(texts, ignore_index=True)
@@ -131,20 +140,22 @@ def save_newcomer_to_local(newcomer, text):
 
 def main():
     print("Started Checking...")
-    last_tweet_id = get_last_tweet_id()
+    # last_tweet_id = get_last_tweet_id()
     # newcoming_news = get_new_tweets(last_tweet_id)
     last_tweet_date = get_last_tweet_date()
     newcoming_snapshots = get_new_tweets_by_date(last_tweet_date)
     newcoming_news = []
     for snapshot in newcoming_snapshots:
-        newcoming_news.append(snapshot.to_dict())
+        snapshot_dict = snapshot.to_dict()
+        snapshot_dict["document_reference"] = snapshot.reference
+        newcoming_news.append(snapshot_dict)
     print(str(len(newcoming_news)), "Newcoming news were found")
     for newcomer in newcoming_news:
         print()
         print("Newcomer Tweet ID:", newcomer["tweet_id"])
         print("By:", newcomer["username"])
-        if newcomer["tweet_id"] == last_tweet_id:
-            continue
+        # if newcomer["tweet_id"] == last_tweet_id:
+        #     continue
         create_newsgroup_firestore = False
         preprocessed = preprocess(newcomer["text"])
         if preprocessed is None:
@@ -154,7 +165,8 @@ def main():
         if cluster_id is None:
             print("Creating new cluster...")
             new_cluster_id = create_cluster(newcomer["tweet_id"])
-            newsgroup_id, create_newsgroup_firestore = create_newsgroup(new_cluster_id, newcomer["date"], newcomer["username"])
+            newsgroup_id = create_newsgroup(new_cluster_id, newcomer["date"], newcomer["username"])
+            create_newsgroup_firestore = True
             print("New cluster and news group are created!")
         else:
             print("Cluster found!")
@@ -162,11 +174,12 @@ def main():
             newsgroup_id = get_newsgroup_id_for_news(cluster_id, newcomer["date"])
             if newsgroup_id is None:
                 print("Creating new news group...")
-                newsgroup_id, create_newsgroup_firestore = create_newsgroup(cluster_id, newcomer["date"], newcomer["username"])
+                newsgroup_id = create_newsgroup(cluster_id, newcomer["date"], newcomer["username"])
+                create_newsgroup_firestore = True
                 print("New news group is created!")
             else:
                 print("Newsgroup found!")
-        update_database(newcomer["tweet_id"], newsgroup_id, create_newsgroup_firestore)
+        update_database(newcomer, newsgroup_id, create_newsgroup_firestore)
         print("Database is updated!")
         save_newcomer_to_local(newcomer, preprocessed)
         print("Local data is updated!")

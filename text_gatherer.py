@@ -14,8 +14,10 @@ n_data = 2000
 
 stop_words = set(stopwords.words('english'))
 
-data = pd.read_csv("tweets.csv")
-data = data[:200]
+data = pd.read_csv("tweets.csv", index_col=0)
+data = data[:150]
+# data = data[150:500]
+data = data.reset_index(drop=True)
 texts = []
 # data = data[-n_data:]
 original_texts = []
@@ -32,6 +34,9 @@ for index, row in data.iterrows():
             print()
             data = data.drop(index, axis=0)
             continue
+        if len(word_tokenize(text)) < 4:
+            data = data.drop(index, axis=0)
+            continue
         texts.append(tokens)
         original_texts.append(text)
     else:
@@ -41,12 +46,12 @@ for index, row in data.iterrows():
         data = data.drop(index, axis=0)
 
 # data = data.drop(["news_group_id"], axis = 1)
-data = data.reset_index(drop=True)
+# data = data.reset_index(drop=True)
 print(data.shape)
 df = pd.DataFrame(texts, index=data.loc[:]["tweet_id"].to_list())
 df.to_csv("texts.csv", header=False)
 df = pd.DataFrame(original_texts)
 df.to_csv("original_texts.csv", header=False, index=False)
 
-df = pd.DataFrame(data)
-df.to_csv("data_to_use.csv", index = False)
+# df = pd.DataFrame(data)
+data.to_csv("data_to_use.csv")
