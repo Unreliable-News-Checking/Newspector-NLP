@@ -57,8 +57,14 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
         new_member = 1
         source_count_map = dict()
         category_map = dict()
+        first_reporter_map = dict()
+        close_second_map = dict()
+        late_comer_map = dict()
+        slow_poke_map = dict()
+        follow_up_map = dict()
         source_count_map[tweet_dict["username"]] = 1
         category_map[tweet_dict["category"]] = 1
+        first_reporter_map[tweet_dict["username"]] = 1
 
         data_to_update = {
             u'count': 1,
@@ -66,6 +72,11 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
             u'group_leader': tweet_dict["username"],
             u'source_count_map': source_count_map,
             u'category_map': category_map,
+            u'first_reporter_map': first_reporter_map,
+            u'close_second_map': close_second_map,
+            u'late_comer_map': late_comer_map,
+            u'slow_poke_map': slow_poke_map,
+            u'follow_up_map': follow_up_map,
             u'category': tweet_dict["category"],
             u'updated_at': tweet_dict["date"],
             u'created_at': tweet_dict["date"],
@@ -75,6 +86,7 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
             u'slow_poke': "",
             u'follow_up': ""
         }
+        
     else:  # the newsgroup already exists
         # Read Newsgroup Document
         newsgroup_data = newsgroup_ref.get(transaction=transaction).to_dict()
@@ -109,13 +121,23 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
                 perceived_category == "-" and category_map[perceived_category] == category_map[tweet_dict["category"]]):
             perceived_category = tweet_dict["category"]
 
+        tag_map_key = news_tag + "_map"
+        tag_map = newsgroup_data[tag_map_key]
+
+        if tweet_dict["username"] in tag_map:
+            tag_map[tweet_dict["username"]] += 1
+        else:
+            merge = True
+            tag_map[tweet_dict["username"]] = 1
+
         data_to_update = {
             u'count': newsgroup_data["count"] + 1,
             u'source_count_map': source_count_map,
             u'category_map': category_map,
             u'category': perceived_category,
             u'updated_at': tweet_dict["date"],
-            f"{news_tag}": tweet_ref.id
+            f"{news_tag}": tweet_ref.id,
+            f"{tag_map_key}": tag_map,
         }
 
     # update Tweet Document
