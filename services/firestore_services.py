@@ -89,7 +89,7 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
         else:  # if this is the first news for account
             merge = True
             new_member = 1
-            count = newsgroup_data["count"]
+            count = len(source_count_map.keys())
             if count == 1:
                 news_tag = "close_second"
             elif count == 2:
