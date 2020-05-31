@@ -46,9 +46,9 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
     #     break
     tweet_ref = tweet_dict["document_reference"]
 
-    # Read Account Document
-    account_ref = db.collection(u"accounts").document(tweet_dict["username"])
-    account_data = account_ref.get(transaction=transaction).to_dict()
+    # # Read Account Document
+    # account_ref = db.collection(u"accounts").document(tweet_dict["username"])
+    # account_data = account_ref.get(transaction=transaction).to_dict()
 
     # update newsgroup document
     if create_newsgroup_firestore:  # a new newsgroup created
@@ -149,12 +149,12 @@ def update_for_newcomer_transactional(transaction, db, tweet_dict, newsgroup_id,
     else:
         transaction.update(newsgroup_ref, data_to_update)
 
-    # update Account Document
-    transaction.update(account_ref, {
-        u'news_count': account_data["news_count"] + 1,
-        u'news_group_membership_count': account_data["news_group_membership_count"] + new_member,
-        f"{news_tag}": account_data[news_tag] + 1
-    })
+    # # update Account Document
+    # transaction.update(account_ref, {
+    #     # u'news_count': account_data["news_count"] + 1,
+    #     # u'news_group_membership_count': account_data["news_group_membership_count"] + new_member,
+    #     # f"{news_tag}": account_data[news_tag] + 1
+    # })
 
 
 def add_tweet(self, tweet):
