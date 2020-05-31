@@ -72,4 +72,43 @@ def perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_thresho
         print("New cluster should be created")
         return None
 
-# perform()
+
+
+from statistics import mode
+from scipy.cluster.hierarchy import linkage
+from scipy.cluster.hierarchy import fcluster
+
+def compute_linkages(X, method, metric):
+    links = linkage(X, method=method, metric=metric)
+    return np.array(links)
+
+
+def perform2(embedding_method, linkge_method, d_metric, d_threshold, inc_d_threshold, multiplier, new_sentence, new_id):
+    data = pd.read_csv("data_to_use.csv")
+    stop_words = set(stopwords.words('english'))
+    texts = pd.read_csv("texts.csv", header=None, index_col=0)
+    cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshold) + ".csv", header=None, index_col=1)
+    if embedding_method == "tfidf":
+        vectorizer = TfidfVectorizer(stop_words=stop_words, lowercase=True)
+    else:
+        vectorizer = CountVectorizer(stop_words=stop_words, lowercase=True, binary=True)
+
+    texts.loc[new_id] = new_sentence
+    texts_np = texts.to_numpy(dtype="str").T[0]
+    vectors = vectorizer.fit_transform(texts_np)
+    vectors = pd.DataFrame(vectors.toarray(), index=list(texts.index.values))
+    links = compute_linkages(vectors.to_numpy(), linkge_method, d_metric)
+    temp_clusters = fcluster(links, criterion="distance", t=d_threshold)
+    found_temp_cluster = temp_clusters[-1]
+    temp_clusters = temp_clusters[:-1]
+
+    comembers = data["tweet_id"].iloc[np.where(temp_clusters == found_temp_cluster)[0]].to_list()
+    if len(comembers) == 0:
+        print("New cluster should be created")
+        return None
+
+    possible_clusters = cluster_data.loc[comembers]
+    possible_clusters = possible_clusters.to_numpy().T[0]
+    # cluster_id_to_assign = mode(possible_clusters)
+    cluster_id_to_assign = max(set(possible_clusters), key=lambda x: np.count_nonzero(possible_clusters == x))
+    return cluster_id_to_assign

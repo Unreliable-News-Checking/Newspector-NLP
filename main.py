@@ -14,10 +14,10 @@ delay = 1 #sec
 news_group_lifetime = 48 #hours
 news_group_lifetime = news_group_lifetime * 60 * 60 * 1000  #millisecs
 
-embedding_method = "tfidf"
-linkge_method = "weighted"
+embedding_method = "bow"
+linkge_method = "average"
 d_metric = "cosine"
-d_threshod = 0.85
+d_threshod = 0.9
 inc_d_threshold = 0.85
 multiplier = 0.75
 new_sentence = "Wearing mask is very necessary is reported by New York"
@@ -161,7 +161,7 @@ def main():
         if preprocessed is None:
             print("Bad text!")
             continue
-        cluster_id = incrementor.perform(embedding_method, linkge_method, d_metric, d_threshod, inc_d_threshold, multiplier, newcomer["text"], newcomer["tweet_id"])
+        cluster_id = incrementor.perform2(embedding_method, linkge_method, d_metric, d_threshod, inc_d_threshold, multiplier, newcomer["text"], newcomer["tweet_id"])
         if cluster_id is None:
             print("Creating new cluster...")
             new_cluster_id = create_cluster(newcomer["tweet_id"])
