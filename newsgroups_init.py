@@ -5,40 +5,60 @@ from services import firestore_services
 import numpy as np
 
 
-embedding_method = "tfidf"
-linkge_method = "weighted"
-d_metric = "cosine"
-d_threshod = 0.85
+embedding_method = "roberta_tfidf"
+linkge_method = "ward"
+d_metric = "euclidean"
+d_threshod = 5
 fs = firestore_services.FireStoreServices("newspector-backend-firebase-adminsdk-ws3xc-bd1c31a298.json")
+
+# def create_newsgroup(cluster_id, tweet_date, tweet_username):
+#     newsgroup_id = uuid.uuid1()
+#     new_newsgroup_local = {
+#         "newsgroup_id": newsgroup_id,
+#         "cluster_id": cluster_id,
+#         "created_at": tweet_date,
+#         "updated_at": tweet_date
+#     }
+#     new_newsgroup_local = pd.DataFrame(new_newsgroup_local, index=[0])
+#     # print(new_newsgroup_local)
+#     try:
+#         data = pd. read_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
+#         data = data.append(new_newsgroup_local, ignore_index=True)
+#     except:
+#         data =new_newsgroup_local
+#     data.to_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", index=False)
+#
+#     new_newsgroup_db = {
+#         "category": "",
+#         "category_map": {},
+#         "created_at": int(tweet_date),
+#         "group_leader": tweet_username,
+#         "is_active": True,
+#         "source_count_map": {},
+#         "updated_at": int(tweet_date)
+#         # ----------------------NEED TO BE FILLED--------------------------
+#     }
+#     return newsgroup_id, new_newsgroup_db
 
 def create_newsgroup(cluster_id, tweet_date, tweet_username):
     newsgroup_id = uuid.uuid1()
     new_newsgroup_local = {
         "newsgroup_id": newsgroup_id,
         "cluster_id": cluster_id,
-        "created_at": tweet_date,
-        "updated_at": tweet_date
+        "created_at": tweet_date
     }
     new_newsgroup_local = pd.DataFrame(new_newsgroup_local, index=[0])
     # print(new_newsgroup_local)
     try:
         data = pd. read_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv")
         data = data.append(new_newsgroup_local, ignore_index=True)
+        data.reset_index(drop=True)
     except:
-        data =new_newsgroup_local
+        data = new_newsgroup_local
     data.to_csv("clusters_newsgroups/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", index=False)
 
-    new_newsgroup_db = {
-        "category": "",
-        "category_map": {},
-        "created_at": int(tweet_date),
-        "group_leader": tweet_username,
-        "is_active": True,
-        "source_count_map": {},
-        "updated_at": int(tweet_date)
-        # ----------------------NEED TO BE FILLED--------------------------
-    }
-    return newsgroup_id, new_newsgroup_db
+    # -------
+    return newsgroup_id
 
 def update_database(tweet_id, newsgroup_id, newsgroup_data):
     fs.update_for_newcomer(tweet_id, newsgroup_id, newsgroup_data)
@@ -82,17 +102,23 @@ for cluster_id in clusters:
     # print(min_date)
     # print()
     earliest_tweet_username = usernames[index_of_min_date]
-    newsgroup_id, newsgroup_data = create_newsgroup(cluster_id, min_date, earliest_tweet_username)
+    newsgroup_id = create_newsgroup(cluster_id, min_date, earliest_tweet_username)
     newsgroup_ids_wrt_clusters.append(newsgroup_id)
-    update_database(earliest_tweet_id, newsgroup_id, newsgroup_data)
+    snapshot = fs.get_tweet_snapshot_by_id(earliest_tweet_id)
+    snapshot_dict = snapshot.to_dict()
+    snapshot_dict["document_reference"] = snapshot.reference
+    update_database(snapshot_dict, newsgroup_id, True)
     # aaa = data["tweet_id"].where(data["date"].where(data["tweet_id"] == clusters[cluster_id]).min() == data["date"])
     count += 1
 
 count = 0
 for cluster_id in clusters:
     print("Assigning Newsgroups of cluster:", str(count), "/", str(len(clusters)))
-    for i, id in enumerate(clusters[cluster_id]):
-        if id == earliest_tweet_ids[count]:
+    for i in range(len(clusters[cluster_id])-1,-1,-1):
+        if clusters[cluster_id][i] == earliest_tweet_ids[count]:
             continue
-        update_database(id, newsgroup_ids_wrt_clusters[count], None)
+        snapshot = fs.get_tweet_snapshot_by_id(clusters[cluster_id][i])
+        snapshot_dict = snapshot.to_dict()
+        snapshot_dict["document_reference"] = snapshot.reference
+        update_database(snapshot_dict, newsgroup_ids_wrt_clusters[count], False)
     count += 1

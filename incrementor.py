@@ -98,7 +98,7 @@ def perform2(embedding_method, linkge_method, d_metric, d_threshold, inc_d_thres
     vectors = vectorizer.fit_transform(texts_np)
     vectors = pd.DataFrame(vectors.toarray(), index=list(texts.index.values))
     links = compute_linkages(vectors.to_numpy(), linkge_method, d_metric)
-    temp_clusters = fcluster(links, criterion="distance", t=d_threshold)
+    temp_clusters = fcluster(links, criterion="distance", t=inc_d_threshold)
     found_temp_cluster = temp_clusters[-1]
     temp_clusters = temp_clusters[:-1]
 
@@ -107,8 +107,10 @@ def perform2(embedding_method, linkge_method, d_metric, d_threshold, inc_d_thres
         print("New cluster should be created")
         return None
 
+    print(comembers)
     possible_clusters = cluster_data.loc[comembers]
     possible_clusters = possible_clusters.to_numpy().T[0]
+    print(possible_clusters)
     # cluster_id_to_assign = mode(possible_clusters)
     cluster_id_to_assign = max(set(possible_clusters), key=lambda x: np.count_nonzero(possible_clusters == x))
     return cluster_id_to_assign

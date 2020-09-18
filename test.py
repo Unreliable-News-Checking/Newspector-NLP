@@ -73,8 +73,21 @@ import time, threading
 # linkge_method = "weighted"
 # d_metric = "cosine"
 # d_threshod = 0.85
-# #
-# cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=None).to_numpy()
+# # # # #
+# cluster_data = pd.read_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header=None)
+# print(cluster_data.loc[99][0])
+# cluster_data.at[99, 0] = "1465dfac-a403-11ea-bebc-74c63b0b0b52"
+# print(cluster_data.loc[99][0])
+# cluster_data.to_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header = False, index=False)
+
+
+# new_data = cluster_data[1].where(cluster_data[1] == 1263812260339777543).dropna()
+# print(new_data)
+# print(cluster_data)
+# print(cluster_data.shape)
+# cluster_data = cluster_data[:-1]
+# print(cluster_data.shape)
+# cluster_data.to_csv("clusters/" + embedding_method + "_" + linkge_method + "_" + d_metric + "_" + str(d_threshod) + ".csv", header = False, index=False)
 # data = pd.read_csv("data_to_use.csv")
 #
 # clusters = {}
@@ -144,24 +157,27 @@ import time, threading
 # a = [1,2,3]
 # ad = pd.DataFrame(a)
 # print(ad.loc[[5]])
-texts = pd.read_csv("texts.csv", header=None, index_col=0)
-data = pd.read_csv("data_to_use.csv", index_col=0)
-print(texts)
-print(texts.shape)
-print(data.shape)
-print(texts.iloc[106][1])
-texts2 = texts[131:]
-print(texts2.iloc[0][1])
+# texts = pd.read_csv("texts.csv", header=None, index_col=0)
+# data = pd.read_csv("data_to_use.csv", index_col=0)
+# print(texts)
+# print(texts.shape)
+# print(data.shape)
+# # print(texts.iloc[106][1])
+# texts2 = texts[40:]
+# # print(texts2.iloc[0][1])
+# #
+# # # print(data)
+# data2 = data[40:]
+# data2 = data2.reset_index(drop=True)
+# # # print(data2)
+# # print(data2["text"].iloc[0])
+# # print(data2.shape)
+# texts2.to_csv("texts.csv", header=False)
+# data2.to_csv("data_to_use.csv")
 
-# print(data)
-data2 = data[131:]
-data2 = data2.reset_index(drop=True)
-# print(data2)
-print(data2["text"].iloc[0])
-print(data2.shape)
-texts2.to_csv("texts.csv", header=False)
-data2.to_csv("data_to_use.csv")
-
+# data2 = data[:100]
+# print(data2.shape)
+# data2.to_csv("data_test.csv")
 
 
 
@@ -187,3 +203,32 @@ data2.to_csv("data_to_use.csv")
 #     df = pd.DataFrame(links)
 #     df.to_csv("linkages/wmd_google_news_" + i + ".csv", index=False, header=False)
 #     print("Linkage for google news with method", i, "was saved")
+
+# a = np.array([1,2,2])
+# print(a[-1])
+# b = pd.DataFrame([[3,4],[5,6],[7,8]], columns=["a", "b"])
+# print(b)
+# d = b["b"].iloc[[0,1]]
+# c = b["b"].iloc[np.where(a==a[-1])[0]]
+# c= c.to_list()
+# print(c[:-1])
+
+from statistics import mode
+
+a = np.array(["a","a","b","b","c","b", "a"])
+# counts = np.bincount(a)
+
+# print(mode(a))
+
+b = max(set(a), key=lambda x: np.count_nonzero(a==x))
+print(b)
+# print(c.shape[0]==2)
+
+for i in range(5,-1,-1):
+    print(i)
+
+from sklearn.preprocessing import normalize
+c = np.array([[1,2],[3,2]])
+print(c)
+c = normalize(c, axis=0)
+print(c)
